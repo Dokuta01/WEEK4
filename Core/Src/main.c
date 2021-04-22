@@ -47,6 +47,14 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t ADCData[4] = {0};
+uint32_t RandomTime = 0;
+uint32_t TimeStamp = 0;
+uint32_t BeginTime = 0;
+uint32_t EndTime = 0;
+uint32_t Ans = 0 ;
+uint8_t Int = 0;
+uint8_t A = 0;
+uint32_t ButtonTimeStamp = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,12 +105,25 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADC_Start_DMA(&hadc1, ADCData, 4);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(Int == 1)
+	  {
+		  if(HAL_GetTick() - TimeStamp >= RandomTime)
+			  {
+				  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, SET);
+				  BeginTime = HAL_GetTick();
+				  Int = 2;
+			  }
+
+	  }
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -193,7 +214,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -297,7 +318,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
@@ -319,8 +340,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == GPIO_PIN_13)
 	{
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		if(Int == 0)
+		{
+			A = 1;
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, RESET);
+			RandomTime = 1000 +((22695477* ADCData[0]) +ADCData[1])% 10000;
+			Int = 1;
+			TimeStamp = HAL_GetTick();
+		}
+		else if(Int == 2)
+		{
+			 A = 3;
+			EndTime = HAL_GetTick();
+			Ans = EndTime - BeginTime;
+			Int = 0;
+		}
 	}
+
 }
 /* USER CODE END 4 */
 
